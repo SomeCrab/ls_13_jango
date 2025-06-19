@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: django_postgres
+    environment:
+      POSTGRES_DB: django_first_project
+      POSTGRES_USER: crab
+      POSTGRES_PASSWORD: pw_test
+    ports:
+      - "5432:5432"
+    networks:
+      - django-net
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app1:
+    build:
+      context: ..
+      dockerfile: dockerfile.app1
+    container_name: django_app1
+    ports:
+      - "8001:8000"
+    environment:
+      - INSTANCE_ID=1
+    depends_on:
+      - migration
+    networks:
+      - django-net
+
+  app2:
+    build:
+      context: ..
+      dockerfile: dockerfile.app2
+    container_name: django_app2
+    ports:
+      - "8000:8000"
+    environment:
+      - INSTANCE_ID=2
+    depends_on:
+      - migration
+    networks:
+      - django-net
+
+  migration:
+    build:
+      context: ..
+      dockerfile: dockerfile.migration
+    container_name: django_migration
+    ports:
+      - "8002:8000"
+    environment:
+      - INSTANCE_ID=3
+    depends_on:
+      - postgres
+    networks:
+      - django-net
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_lb
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - app1
+      - app2
+    networks:
+      - django-net
+
+networks:
+  django-net:
+    driver: bridge
+
+volumes:
+  pgdata:
