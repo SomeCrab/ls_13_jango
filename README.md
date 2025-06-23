@@ -45,3 +45,8 @@ docker-compose -f deploy/docker-compose.yml up nginx --build --force-recreate -d
 npx loadtest -c 1000 --rps 200 http://localhost:8000
 npx loadtest -c 1000 --rps 200 http://localhost:80
 ```
+
+# create superuser
+```bash
+cd deploy/ && docker-compose run app1 sh -c "python manage.py createsuperuser"
+```
