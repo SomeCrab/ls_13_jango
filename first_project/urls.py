@@ -23,5 +23,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('', RedirectView.as_view(url='/admin/', permanent=True)),
     path('', include('myapp.urls')),
+    path('', include('task_manager.urls')),
     #path("hello", view=hello, name="hello"),
 ]
