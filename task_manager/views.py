@@ -2,19 +2,31 @@ from django.shortcuts import render
 from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Task, STATUS_CHOICES
+from .models import (
+    Task,
+    SubTask,
+    Category,
+    STATUS_CHOICES
+    )
 from .serializers import (
     TaskListSerializer,
     TaskDetailSerializer,
     TaskCreateSerializer,
-    TaskStatisticsSerializer
+    TaskStatisticsSerializer,
+    SubTaskSerializer,
+    SubTaskDetailsSerializer,
+    SubTaskCreateSerializer,
+    SubTaskUpdateSerializer,
+    CategoryCreateSerializer
     )
 
-
+# TODO: classify remain views
 @api_view(['GET'])
 def task_list(request):
+    """ Multiple tasks view """
     tasks = Task.objects.all()
     serializer = TaskListSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -22,6 +34,7 @@ def task_list(request):
 
 @api_view(['GET'])
 def task_detail(request, pk):
+    """ Single task detailed view """
     try:
         task = Task.objects.get(pk=pk)
     except Task.DoesNotExist:
@@ -34,6 +47,7 @@ def task_detail(request, pk):
 
 @api_view(['POST'])
 def task_create(request):
+    """ Task creating view """
     serializer = TaskCreateSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
@@ -44,40 +58,11 @@ def task_create(request):
         return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST
                         )
-    
 
 @api_view(['GET'])
 def task_statistics(request):
+    """ Task statistics view """
     now = timezone.now()
-
-    # 1 - bad, 3 requests to a db
-    # total_tasks = Task.objects.aggregate(
-    #         total_count=Count('id')
-    #     )['total_count']
-    # failed_deadline_count = Task.objects.filter(deadline__lt=now).exclude(status='DONE').count()
-
-    # 2 - bad, 2 requests to a db
-    # statistics = Task.objects.aggregate(
-    #     total_tasks=Count('id'),
-    #     failed_deadline_count=Count(
-    #         'id',
-    #         filter=Q(deadline__lt=now) & ~Q(status='DONE')
-    #     )
-    # )
-    # count_by_status = Task.objects.values('status').annotate(count=Count('id'))
-    # count_by_status_dict = {item['status']: item['count'] for item in count_by_status}
-
-    # 1
-    # statistics = {
-    #     'total_tasks': total_tasks,
-    #     'count_by_status': count_by_status_dict,
-    #     'failed_deadline_count': failed_deadline_count,
-    # }
-
-    # 2
-    # statistics['count_by_status'] = count_by_status_dict
-
-    # 3 - good, single request to a db
     stats_kwargs = {
         'total_tasks': Count('id'),
         'failed_deadline_count': Count(
@@ -100,7 +85,53 @@ def task_statistics(request):
     }
 
     statistics['count_by_status'] = count_by_status
-    # end 3
     serializer = TaskStatisticsSerializer(data=statistics)
     serializer.is_valid(raise_exception=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SubTaskListCreateView(APIView):
+    """ Subtasks listing and creating view. """
+    def get(self, request):
+        subtasks = SubTask.objects.all()
+        if not subtasks.exists():
+            return Response({"detail": "No subtasks yet."}, status=status.HTTP_200_OK)
+        serializer = SubTaskSerializer(subtasks, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        serializer = SubTaskCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubTaskDetailUpdateDeleteView(APIView):
+    """ View for updating, deleting or getting details of subtask. """
+    def get(self, request, pk):
+        try:
+            subtask = SubTask.objects.get(pk=pk)
+        except SubTask.DoesNotExist:
+            return Response({'error': 'Subtask not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = SubTaskDetailsSerializer(subtask)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def patch(self, request, pk):
+        try:
+            subtask = SubTask.objects.get(pk=pk)
+        except SubTask.DoesNotExist:
+            return Response({'error': 'Subtask not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = SubTaskUpdateSerializer(subtask, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        try:
+            subtask = SubTask.objects.get(pk=pk)
+        except SubTask.DoesNotExist:
+            return Response({'error': 'Subtask not found'}, status=status.HTTP_404_NOT_FOUND)
+        subtask.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

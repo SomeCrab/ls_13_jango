@@ -13,9 +13,7 @@ STATUS_CHOICES = {
 
 # MODELS
 class Category(models.Model):
-    '''
-        Task category model.
-    '''
+    ''' Task category model. '''
     name = models.CharField(max_length=30, verbose_name="Category Title", unique=True)
 
     def __str__(self):
@@ -31,9 +29,7 @@ class Category(models.Model):
 
 
 class Task(models.Model):
-    '''
-        Main task model.
-    '''
+    ''' Main task model. '''
     title = models.CharField(max_length=100, verbose_name="Task Title", unique_for_date='created_at', blank=False)
     description = models.TextField(null=True, blank=True, verbose_name="Description")
     category = models.ManyToManyField(Category, related_name='tasks', verbose_name="Task Categories")
@@ -59,9 +55,7 @@ class Task(models.Model):
 
 
 class SubTask(models.Model):
-    '''
-        Subtask model.
-    '''
+    ''' Subtask model. '''
     title = models.CharField(max_length=100, verbose_name="Subtask Title", unique_for_date='created_at', blank=False)
     description = models.TextField(null=True, blank=True, verbose_name="Description")
     task = models.ForeignKey(
