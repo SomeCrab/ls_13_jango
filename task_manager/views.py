@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from .models import (
     Task,
     SubTask,
@@ -27,7 +28,11 @@ from .serializers import (
 @api_view(['GET'])
 def task_list(request):
     """ Multiple tasks view """
-    tasks = Task.objects.all()
+    filters = {}
+    deadline = request.query_params.get('deadline')
+    if deadline:
+        filters['deadline__week_day'] = deadline
+    tasks = Task.objects.filter(**filters)
     serializer = TaskListSerializer(tasks, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -58,6 +63,7 @@ def task_create(request):
         return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST
                         )
+
 
 @api_view(['GET'])
 def task_statistics(request):
@@ -90,14 +96,29 @@ def task_statistics(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class SubTaskListCreateView(APIView):
+class SubTaskListCreateView(APIView, PageNumberPagination):
     """ Subtasks listing and creating view. """
+    page_size = 5
+
     def get(self, request):
-        subtasks = SubTask.objects.all()
+        filter_params = ['task', 'status']
+        filters = {param: request.query_params.get(param) for param in filter_params if request.query_params.get(param) is not None}
+
+        subtasks = SubTask.objects.filter(**filters) if filters else SubTask.objects.all()
         if not subtasks.exists():
             return Response({"detail": "No subtasks yet."}, status=status.HTTP_200_OK)
-        serializer = SubTaskSerializer(subtasks, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        page_size = self.get_page_size(request)
+        self.page_size = page_size
+
+        sort_by = request.query_params.get('sort_by', '-created_at')
+        sort_order = request.query_params.get('sort_order', 'desc')
+        if sort_order == 'asc':
+            sort_by = sort_by.replace('-', '')
+        sorted_subtasks = subtasks.order_by(sort_by)
+
+        paginated_subtasks = self.paginate_queryset(sorted_subtasks, request, view=self)
+        serializer = SubTaskSerializer(paginated_subtasks, many=True)
+        return self.get_paginated_response(serializer.data)
     
     def post(self, request):
         serializer = SubTaskCreateSerializer(data=request.data)
@@ -105,6 +126,13 @@ class SubTaskListCreateView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get_page_size(self, request):
+        """ Page size method """
+        page_size = request.query_params.get('page_size')
+        if page_size and page_size.isdigit():
+            return int(page_size)
+        return self.page_size
 
 
 class SubTaskDetailUpdateDeleteView(APIView):
@@ -122,7 +150,7 @@ class SubTaskDetailUpdateDeleteView(APIView):
             subtask = SubTask.objects.get(pk=pk)
         except SubTask.DoesNotExist:
             return Response({'error': 'Subtask not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = SubTaskUpdateSerializer(subtask, data=request.data)
+        serializer = SubTaskUpdateSerializer(subtask, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)

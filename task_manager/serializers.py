@@ -55,7 +55,8 @@ class SubTaskUpdateSerializer(serializers.ModelSerializer):
             'description',
             'task',
             'status',
-            'deadline'
+            'deadline',
+            'created_at',
             ]
         read_only_fields = ['created_at']
 
