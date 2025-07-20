@@ -127,6 +127,21 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+class TaskUpdateSerializer(serializers.ModelSerializer):
+    """ Task update model serializer. """
+    class Meta:
+        model = Task
+        fields = [
+            'title',
+            'description',
+            'category',
+            'status',
+            'deadline',
+            'created_at'
+            ]
+        read_only_fields = ['created_at']
+
+
 class TaskStatisticsSerializer(serializers.Serializer):
     """ Task statistics serializer. """
     total_tasks = serializers.IntegerField()
