@@ -61,6 +61,14 @@ class SubTaskUpdateSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_at']
 
 
+class CategoryListSerializer(serializers.ModelSerializer):
+    """ Category creation model serializer. """
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
+
+
 class CategoryCreateSerializer(serializers.ModelSerializer):
     """ Category creation model serializer. """
     class Meta:

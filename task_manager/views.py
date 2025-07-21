@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from django.db.models import Count, Q
 from django.utils import timezone
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework import status, filters
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import TaskFilter
@@ -25,7 +26,8 @@ from .serializers import (
     SubTaskDetailsSerializer,
     SubTaskCreateSerializer,
     SubTaskUpdateSerializer,
-    CategoryCreateSerializer
+    CategoryCreateSerializer,
+    CategoryListSerializer
     )
 
 class CustomPageNumberPagination(PageNumberPagination):
@@ -111,3 +113,73 @@ class SubTaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PATCH', 'PUT']:
             return SubTaskUpdateSerializer
         return SubTaskDetailsSerializer
+    
+
+
+class CategoryViewSet(ModelViewSet):
+    queryset = Category.objects.all()
+
+    def get_queryset(self):
+        if self.action in ['restore', 'hard_delete']:
+            return Category.objects.only_deleted()
+        elif self.action == 'statistic':
+            return Category.objects.include_deleted()
+        return Category.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CategoryCreateSerializer
+        return CategoryListSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        """ Soft delete. """
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # TODO: methods for action's decorators RESTful
+    @action(detail=True, methods=['get'])
+    def restore(self, request, pk=None):
+        """ Restore soft-deleted. """
+        category = self.get_object()
+        if not category.is_deleted:
+            return Response(
+                {"error": "Category is not deleted."},
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        category.is_deleted = False
+        category.deleted_at = None
+        category.save()
+        return Response(status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    def hard_delete(self, request, pk=None):
+        """ Permanently delete a category. """
+        category = self.get_object()
+        
+        if not category.is_deleted:
+            return Response(
+                {"error": "Only soft-deleted items can be hard deleted"},
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        category.hard_delete()
+        return Response(
+            {"status": "permanently deleted."},
+            status=status.HTTP_204_NO_CONTENT
+            )
+
+    @action(detail=False, methods=['get'])
+    def statistic(self, request):
+        """ Statistics for categories. """
+        categories_with_tasks_count = Category.objects.annotate(tasks_count=Count('tasks'))
+
+        data = [
+            {
+                "id": category.id,
+                "category": category.name,
+                "tasks_count": category.tasks_count
+            }
+            for category in categories_with_tasks_count
+        ]
+        return Response(data)
