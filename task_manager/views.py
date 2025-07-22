@@ -137,8 +137,7 @@ class CategoryViewSet(ModelViewSet):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    # TODO: methods for action's decorators RESTful
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['POST'])
     def restore(self, request, pk=None):
         """ Restore soft-deleted. """
         category = self.get_object()
@@ -152,7 +151,7 @@ class CategoryViewSet(ModelViewSet):
         category.save()
         return Response(status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['DELETE'])
     def hard_delete(self, request, pk=None):
         """ Permanently delete a category. """
         category = self.get_object()
@@ -169,7 +168,7 @@ class CategoryViewSet(ModelViewSet):
             status=status.HTTP_204_NO_CONTENT
             )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['GET'])
     def statistic(self, request):
         """ Statistics for categories. """
         categories_with_tasks_count = Category.objects.annotate(tasks_count=Count('tasks'))
