@@ -20,6 +20,8 @@ env = environ.Env(
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_DIR = BASE_DIR / 'logs'
+os.makedirs(LOG_DIR, exist_ok=True)
 
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
@@ -140,3 +142,60 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{asctime} {levelname} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+        'http_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'http_logs.log',
+            'formatter': 'verbose',
+        },
+        'db_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': LOG_DIR / 'db_logs.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['http_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['db_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'first_project.paginations.CustomCursorPagination',
+}

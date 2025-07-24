@@ -30,19 +30,17 @@ from .serializers import (
     CategoryListSerializer
     )
 
-class CustomPageNumberPagination(PageNumberPagination):
-    page_size = 2
+# class CustomPageNumberPagination(PageNumberPagination):
+#     page_size = 2
 
 
 class TaskListCreateView(ListCreateAPIView):
     """ Task list and creating view """
     queryset = Task.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    #filterset_fields = ['status', 'deadline']
     filterset_class = TaskFilter
     search_fields = ['title', 'description']
     ordering_fields = ['created_at']
-    pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -97,7 +95,6 @@ class SubTaskListCreateView(ListCreateAPIView):
     filterset_fields = ['status', 'deadline']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at']
-    pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -118,6 +115,7 @@ class SubTaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
 
 class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
+    pagination_class = None
 
     def get_queryset(self):
         if self.action in ['restore', 'hard_delete']:
