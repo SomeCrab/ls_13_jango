@@ -19,10 +19,11 @@ from django.urls import path, include
 from myapp.views import hello
 from django.views.generic import RedirectView
 
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('', RedirectView.as_view(url='/admin/', permanent=True)),
     path('', include('myapp.urls')),
-    path('', include('task_manager.urls')),
+    path('manager/', include('task_manager.urls')),
     #path("hello", view=hello, name="hello"),
 ]
