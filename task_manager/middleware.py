@@ -1,3 +1,4 @@
+from django.http import JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 from django.urls import resolve
 from django.conf import settings
@@ -21,7 +22,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
     
     Excludes specific paths from authentication requirements.
     Manages CSRF protection for non-GET requests using double token strategy."""
-    EXCLUDED_PATHS = ['manager-login', 'manager-registration'] #, 'manager-logout']
+    EXCLUDED_PATHS = ['manager-login', 'manager-registration', 'manager-logout']
 
     def process_request(self, request):
         """Authenticate request using JWT tokens.
@@ -96,7 +97,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
                 
                 csrf_token = self._generate_csrf_token()
                 new_access['csrf'] = csrf_token
-                #print(f'new_access csft: {new_access}')
+                #print(f'new csft: {csrf_token}')
                 if rotation_flag:
                     request._new_tokens = {
                         'access': str(new_access),
@@ -130,6 +131,11 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
             # CSRF for non GET requests
             if request.method not in ['GET', 'HEAD', 'OPTIONS']:
                 self._validate_csrf(request, valid_access_token)
+                if hasattr(request, '_csrf_failed') and request._csrf_failed:
+                    return JsonResponse(
+                        {'error': 'CSRF validation failed!!111', 'code': 'csrf_failed'},
+                        status=403
+                    )
         elif not need_refresh:
             request._auth_failed = True
     
@@ -226,7 +232,7 @@ class JWTAuthenticationMiddleware(MiddlewareMixin):
                     path='/'
                 )
             
-            if response.get('Content-Type', '').startswith('application/json'):
+            if response.get('Content-Type', '') == 'application/json':
                 try:
                     data = json.loads(response.content)
                     data['csrf_token'] = tokens['csrf']

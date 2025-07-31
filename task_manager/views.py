@@ -5,7 +5,11 @@ from rest_framework.decorators import api_view, action
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import (
+    ListAPIView,
+    ListCreateAPIView,
+    RetrieveUpdateDestroyAPIView
+    )
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import status, filters
@@ -26,6 +30,7 @@ from .models import (
     )
 from .serializers import (
     TaskListSerializer,
+    TaskUserListSerializer,
     TaskDetailSerializer,
     TaskCreateSerializer,
     TaskUpdateSerializer,
@@ -38,6 +43,7 @@ from .serializers import (
     CategoryListSerializer,
     UserRegisterSerializer,
     )
+from task_manager.permissions import IsOwnerOrReadOnly
 
 def set_jwt_cookies(response, user):
     """ set JWT cookies + CSRF """
@@ -130,7 +136,7 @@ class RegistrationView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     
     def post(self, request):
         try:
@@ -156,8 +162,6 @@ class LogoutView(APIView):
 
 class TaskListCreateView(ListCreateAPIView):
     """ Task list and creating view """
-    #authentication_classes = [JWTAuthentication]
-    #permission_classes = [IsAuthenticated]
     queryset = Task.objects.all()
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TaskFilter
@@ -168,9 +172,20 @@ class TaskListCreateView(ListCreateAPIView):
         if self.request.method == 'POST':
             return TaskCreateSerializer
         return TaskListSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+class TaskUserListView(ListAPIView):
+    """ View for updating, deleting or getting details of task. """
+    serializer_class = TaskUserListSerializer
+    def get_queryset(self):
+        return Task.objects.filter(owner=self.request.user)
 
 
 class TaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsOwnerOrReadOnly]
     queryset = Task.objects.all()
 
     def get_serializer_class(self):
@@ -222,17 +237,20 @@ class SubTaskListCreateView(ListCreateAPIView):
         if self.request.method == 'POST':
             return SubTaskCreateSerializer
         return SubTaskSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 
 class SubTaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
     """ View for updating, deleting or getting details of subtask. """
+    permission_classes = [IsOwnerOrReadOnly]
     queryset = SubTask.objects.all()
 
     def get_serializer_class(self):
         if self.request.method in ['PATCH', 'PUT']:
             return SubTaskUpdateSerializer
         return SubTaskDetailsSerializer
-    
 
 
 class CategoryViewSet(ModelViewSet):

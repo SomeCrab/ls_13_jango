@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.postgres.indexes import BrinIndex
 from .managers import CategorySoftDeleteManager
 from django.utils import timezone
+from django.conf import settings
 
 # CONSTANTS
 STATUS_CHOICES = {
@@ -48,6 +49,9 @@ class Category(models.Model):
         db_table = 'task_manager_category'
         verbose_name = 'Category'
         verbose_name_plural = "Categories"
+        permissions = [
+            ("can_get_statistic", "Can get genres statistic"),
+            ]
 
 
 class Task(models.Model):
@@ -55,6 +59,12 @@ class Task(models.Model):
     title = models.CharField(max_length=100, verbose_name="Task Title", blank=False)
     description = models.TextField(null=True, blank=True, verbose_name="Description")
     category = models.ManyToManyField(Category, related_name='tasks', verbose_name="Task Categories")
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        related_name='tasks'
+    )
     status = models.CharField(
         max_length=15,
         blank=False,
@@ -83,6 +93,12 @@ class SubTask(models.Model):
     task = models.ForeignKey(
         Task,
         on_delete=models.CASCADE,
+        related_name='subtasks'
+    )
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
         related_name='subtasks'
     )
     status = models.CharField(

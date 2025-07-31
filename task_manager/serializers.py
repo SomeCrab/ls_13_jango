@@ -16,6 +16,7 @@ class SubTaskSerializer(serializers.ModelSerializer):
         model = SubTask
         fields = [
             'id',
+            'owner',
             'title',
             'description',
             'task',
@@ -42,7 +43,7 @@ class SubTaskCreateSerializer(SubTaskSerializer):
             'status',
             'deadline'
             ]
-        read_only_fields = ['updated_at', 'created_at', 'id']
+        read_only_fields = ['updated_at', 'created_at', 'id', 'owner']
         #strict = True
 
 
@@ -59,7 +60,7 @@ class SubTaskUpdateSerializer(serializers.ModelSerializer):
             'deadline',
             'created_at',
             ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'owner']
 
 
 class CategoryListSerializer(serializers.ModelSerializer):
@@ -99,14 +100,19 @@ class TaskListSerializer(serializers.ModelSerializer):
         model = Task
         fields = [
             'id',
+            'owner',
             'title',
             'description',
             'category',
             'status',
             'deadline',
             'created_at',
-            'updated_at'
+            'updated_at',
             ]
+
+
+class TaskUserListSerializer(TaskListSerializer):
+    """ Tasks created by users serializer """
 
 
 class TaskDetailSerializer(TaskListSerializer):
@@ -126,6 +132,7 @@ class TaskCreateSerializer(serializers.ModelSerializer):
             'status',
             'deadline'
             ]
+        read_only_fields = ['owner']
 
     def validate_deadline(self, value):
         if value in (None, '', 'null'):
@@ -148,7 +155,7 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
             'deadline',
             'created_at'
             ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'owner']
 
 
 class TaskStatisticsSerializer(serializers.Serializer):

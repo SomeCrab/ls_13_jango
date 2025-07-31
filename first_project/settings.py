@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'drf_yasg',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
@@ -198,6 +199,11 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        'task_manager.middleware': {
+            'handlers': ['console', 'http_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 
@@ -218,16 +224,17 @@ REST_FRAMEWORK = {
 # cookies settings
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-CSRF_TOKEN_ALGORITHM = 'RS256'
+#CSRF_TOKEN_ALGORITHM = 'RS256'
+CSRF_TOKEN_ALGORITHM = 'HS256'
 ACCES_TOKEN_THRESHOLD = 60
 REFRESH_TOKEN_THRESHOLD = 86400
 if DEBUG:
     CSRF_TOKEN_ALGORITHM = 'HS256'
     SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+    #CSRF_COOKIE_SECURE = False
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
