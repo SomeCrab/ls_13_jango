@@ -156,7 +156,6 @@ class LogoutView(APIView):
         
         response.delete_cookie('access_token', path='/')
         response.delete_cookie('refresh_token', path='/')
-        print(f'resp after delete: {response.cookies}')
         return response
 
 

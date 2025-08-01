@@ -2,6 +2,7 @@ from datetime import timedelta
 from rest_framework import serializers
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password as default_validate_password
 from .models import (
     Task,
     SubTask,
@@ -181,3 +182,21 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             email=validated_data.get('email', '')
         )
         return user
+    
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(f"Username {value} is taken.")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("You cant register multiple accounts on same email.")
+        return value
+
+    def validate_password(self, value):
+        if not any(char.isupper() for char in value):
+            raise serializers.ValidationError("Password must contain at least one upper character.")
+        
+        default_validate_password(value)
+
+        return value
