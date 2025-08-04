@@ -108,6 +108,20 @@ DATABASES = {
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
+# Email system
+if not DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.adress'
+    EMAIL_PORT = 587 # or 465 for SSL
+    EMAIL_USE_TLS = True # or False if using SSL
+    EMAIL_HOST_USER = 'email_host_user'
+    EMAIL_HOST_PASSWORD = 'email_host_password'
+    DEFAULT_FROM_EMAIL = 'default_from_email'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# Authentication settings
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -150,7 +164,7 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
+# Logger
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -207,7 +221,7 @@ LOGGING = {
     },
 }
 
-
+# DRF settings
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'first_project.paginations.CustomCursorPagination',
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -248,3 +262,6 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
 }
+
+# Core settings
+DEFAULT_CHARSET = 'utf-8'

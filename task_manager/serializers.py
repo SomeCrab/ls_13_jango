@@ -9,6 +9,40 @@ from .models import (
     Category
     )
 
+# TODO: belongs to (serializers/)mixins.py
+class TrackFieldUpdatesMixin:
+    def update(self, instance, validated_data):
+        m2m_fields = {}
+        update_fields = []
+        
+        for field_name, value in validated_data.items():
+            field = self.Meta.model._meta.get_field(field_name)
+            if field.many_to_many:
+                m2m_fields[field_name] = value
+            else:
+                # Only add to update_fields if the value actually changed
+                if getattr(instance, field_name) != value:
+                    setattr(instance, field_name, value)
+                    update_fields.append(field_name)
+        
+        # Add auto_now fields that will be updated
+        if m2m_fields or update_fields:
+            auto_now_fields = [
+                field.name for field in self.Meta.model._meta.get_fields()
+                if getattr(field, 'auto_now', False)
+            ]
+            update_fields.extend(auto_now_fields)
+        #print(update_fields)
+        # Save with update_fields if there are changes
+        if update_fields:
+            instance.save(update_fields=update_fields)
+        
+        # Set M2M fields after save
+        for field_name, value in m2m_fields.items():
+            getattr(instance, field_name).set(value)
+        
+        return instance
+
 
 class SubTaskSerializer(serializers.ModelSerializer):
     """ Sub Task model serializer. """
@@ -144,19 +178,21 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return value
 
 
-class TaskUpdateSerializer(serializers.ModelSerializer):
+class TaskUpdateSerializer(TrackFieldUpdatesMixin, serializers.ModelSerializer):
     """ Task update model serializer. """
     class Meta:
         model = Task
         fields = [
             'title',
+            'owner',
             'description',
             'category',
             'status',
             'deadline',
+            'updated_at',
             'created_at'
             ]
-        read_only_fields = ['created_at', 'owner']
+        read_only_fields = ['created_at', 'owner', 'updated_at']
 
 
 class TaskStatisticsSerializer(serializers.Serializer):

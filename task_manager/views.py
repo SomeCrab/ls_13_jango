@@ -191,6 +191,15 @@ class TaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PATCH', 'PUT']:
             return TaskUpdateSerializer
         return TaskDetailSerializer
+    
+    # def perform_update(self, serializer):
+    #     instance = serializer.instance
+    #     updated_fields = list(serializer.validated_data.keys())
+    #     print(updated_fields)
+    #     for field, value in serializer.validated_data.items():
+    #         setattr(instance, field, value)
+    #     instance.save(update_fields=updated_fields)
+
 
 
 @api_view(['GET'])
@@ -250,6 +259,11 @@ class SubTaskDetailUpdateDeleteView(RetrieveUpdateDestroyAPIView):
         if self.request.method in ['PATCH', 'PUT']:
             return SubTaskUpdateSerializer
         return SubTaskDetailsSerializer
+    
+    def perform_update(self, serializer):
+        updated_fields = list(serializer.validated_data.keys())
+        
+        serializer.save(update_fields=updated_fields)
 
 
 class CategoryViewSet(ModelViewSet):
